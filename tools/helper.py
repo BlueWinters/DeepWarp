@@ -6,18 +6,18 @@ import os
 import scipy.misc as misc
 import imageio
 
-import data.config as config
-import data.preprocess as process
 
 
-width = 51*2
-height = 41*2
+width = 51*1
+height = 41*1
 angle_dim = 2
 
-index_left_eye = config.index_right_eye
-index_right_eye = config.index_left_eye
-num_feature_point = config.num_feature_point
-
+index_left_eye = [42, 43, 44, 45, 46, 47]
+index_right_eye = [36, 37, 38, 39, 40, 41]
+num_feature_point = 7
+detector = dlib.get_frontal_face_detector()
+shape_predictor_path = 'D:\deepwarp\deep-gaze-warp\data\model\shape_predictor_68_face_landmarks.dat'
+predictor = dlib.shape_predictor(shape_predictor_path)
 
 def learn_rate_scheduler(file_name):
     scheduler = {}
@@ -28,6 +28,16 @@ def learn_rate_scheduler(file_name):
         lr = float(info[1])
         scheduler[epoch] = lr
     return scheduler
+
+def expansion_to_layer(feat_points):
+    feat_points_layers = np.zeros(shape=(height, width, num_feature_point, 2), dtype=np.int)
+    for n in range(num_feature_point):
+        for w in range(width):
+            feat_points_layers[:, w, n, 0] = w - feat_points[n, 0]
+        for h in range(height):
+            feat_points_layers[h, :, n, 1] = h - feat_points[n, 1]
+    feat_points_layers = np.reshape(feat_points_layers, (height, width, num_feature_point*2))
+    return feat_points_layers
 
 def process_one_eye(shape, eye_index, image):
     eye_coord_global = np.zeros(shape=(num_feature_point, 2), dtype=np.int)
@@ -73,8 +83,8 @@ def process_one_eye(shape, eye_index, image):
     return eye_coord_local, resize_warp, (x_cen, y_cen, half_w, half_h)
 
 def preprocess_image(rgb_img):
-    detector = process.detector
-    predictor = process.predictor
+    global detector
+    global predictor
 
     detection = detector(rgb_img, 1)
     for det in detection:
@@ -83,8 +93,8 @@ def preprocess_image(rgb_img):
         left_eye_coord_local, resize_left_img, out_shape_left = process_one_eye(shape, index_left_eye, rgb_img)
         right_eye_coord_local, resize_right_img, out_shape_right = process_one_eye(shape, index_right_eye, rgb_img)
         # expand local coordinate
-        left_eye_coord_local = process.expansion_to_layer(left_eye_coord_local)
-        right_eye_coord_local = process.expansion_to_layer(right_eye_coord_local)
+        left_eye_coord_local = expansion_to_layer(left_eye_coord_local)
+        right_eye_coord_local = expansion_to_layer(right_eye_coord_local)
         # expand dimension
         left_eye_coord_local = np.expand_dims(left_eye_coord_local, axis=0)
         resize_left_img = np.expand_dims(resize_left_img, axis=0)
@@ -95,10 +105,10 @@ def preprocess_image(rgb_img):
         resize_left_img = resize_left_img.astype(np.float) / 255.
         resize_right_img = resize_right_img.astype(np.float) / 255.
         for n in range(num_feature_point):
-            left_eye_coord_local[:, :, :, 2*n+0] = left_eye_coord_local[:, :, :, 2*n+0] / 51.
-            left_eye_coord_local[:, :, :, 2*n+1] = left_eye_coord_local[:, :, :, 2*n+1] / 41.
-            right_eye_coord_local[:, :, :, 2*n+1] = right_eye_coord_local[:, :, :, 2*n+1] / 51.
-            right_eye_coord_local[:, :, :, 2*n+1] = right_eye_coord_local[:, :, :, 2*n+1] / 41.
+            left_eye_coord_local[:, :, :, 2*n+0] = left_eye_coord_local[:, :, :, 2*n+0] / width
+            left_eye_coord_local[:, :, :, 2*n+1] = left_eye_coord_local[:, :, :, 2*n+1] / height
+            right_eye_coord_local[:, :, :, 2*n+1] = right_eye_coord_local[:, :, :, 2*n+1] / width
+            right_eye_coord_local[:, :, :, 2*n+1] = right_eye_coord_local[:, :, :, 2*n+1] / height
         # for only one face
         return resize_left_img, left_eye_coord_local, \
                resize_right_img, right_eye_coord_local, \
@@ -149,15 +159,16 @@ def replace_eyes(image, out_eyes, out_shape, out_path, n):
     misc.imsave(image_save_path_and_name, copy_image)
     return None
 
-def save_as_gif(images_list, out_path, gif_file_name='all'):
+def save_as_gif(images_list, out_path, gif_file_name='all', save_image=False):
     if os.path.exists(out_path) == False:
         os.mkdir(out_path)
 
     # save as .png
-    for n in range(len(images_list)):
-        file_name = '{}.png'.format(n)
-        save_path_and_name = os.path.join(out_path, file_name)
-        misc.imsave(save_path_and_name, images_list[n])
+    if save_image == True:
+        for n in range(len(images_list)):
+            file_name = '{}.png'.format(n)
+            save_path_and_name = os.path.join(out_path, file_name)
+            misc.imsave(save_path_and_name, images_list[n])
     # save as .gif
     out_path_and_name = os.path.join(out_path, '{}.gif'.format(gif_file_name))
     imageio.mimsave(out_path_and_name, images_list, 'GIF', duration=0.1)

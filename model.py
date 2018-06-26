@@ -200,7 +200,7 @@ class DeepGaze:
         with tf.variable_scope(name):
             N, iH, iW, iC = input.get_shape().as_list()
             _, fH, fW, fC = flow.get_shape().as_list()
-            assert iH == iH and iW == fW and iC == 3 and fC == 2
+            assert iH == fH and iW == fW and iC == 3 and fC == 2
             # re-order & reshape: N,H,W,C --> N,C,H*W
             flow = tf.reshape(tf.transpose(flow, [0, 3, 1, 2]), [-1, fC, fH * fW])
 
@@ -260,9 +260,6 @@ class DeepGaze:
 
             # the flag of train or inference
             self.is_train = tf.placeholder(dtype=tf.bool, name='is_train')
-            #
-            self.coarse_coef = tf.placeholder(dtype=tf.float32, name='coarse_coef')
-            self.fine_coef = tf.placeholder(dtype=tf.float32, name='fine_coef')
 
             with tf.variable_scope('angle_embedding'):
                 # concat operation before angle embedding, we input the tow absolute angle of the pair images
@@ -332,6 +329,7 @@ class DeepGaze:
                     # up-sample
                     light_feat_1_res = tf.image.resize_images(light_feature_1, (self.height, self.width),
                                                               tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+                    # light_feat_1_res = light_feature_1
                     # concat the coarse and fine part features
                     light_input = tf.concat([light_feat_1_res, light_feature_2], axis=3, name='light_input_concat')
                     # the first layer
@@ -359,13 +357,10 @@ class DeepGaze:
                 self.pixel_loss = tf.reduce_mean(tf.square(self.output - self.re_input))
                 # the final loss
                 if self.light_on == True:
-                    # self.loss = tf.constant(0.0001, dtype=tf.float32, name='coarse_cof') * self.coarse_loss + \
-                    #             tf.constant(0.01, dtype=tf.float32, name='fine_cof') * self.fine_loss + \
-                    #             self.output_loss
-                    self.loss = self.coarse_loss + self.fine_loss + self.output_loss
+                    self.loss = self.coarse_loss +  self.fine_loss + self.output_loss
                 else:
                     # output_loss --> self.fine_loss
-                    self.loss = self.coarse_coef * self.coarse_loss + self.output_loss
+                    self.loss = self.coarse_loss + self.output_loss
 
             # summary
             with tf.name_scope('summary'):
