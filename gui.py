@@ -134,8 +134,8 @@ if __name__ == '__main__':
     root.title('deepwarp')
     root.resizable(width=False, height=False)
 
-    width, height = 1280, 720
-    frm_img = tk.Frame(width=1280, height=720)
+    width, height = 490, 493 #1280, 720
+    frm_img = tk.Frame(width=width, height=height)
     frm_img.grid(row=0, column=0, padx=1, pady=1)
     frm_img.grid_propagate(0)
     frm_ctl = tk.Frame(width=640, height=250)
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     label_in_path = tk.Label(frm_ctl, text='in path')
     label_in_path.grid(row=0, column=0, padx=5, pady=5)#, label_in_path.pack(side=tk.LEFT)
     default_var = tk.StringVar()
-    default_var.set('D:\deepwarp\deep-gaze-warp/backup/sequence\keep_left/1/14_5.png') # set default image
+    default_var.set('doc\obama.png') # set default image
     entry_in_path = tk.Entry(frm_ctl, width=60, text=default_var, state='normal')
     entry_in_path.grid(row=0, column=1, padx=5, pady=5)
 
