@@ -25,7 +25,7 @@ The first one is the original image. The other two are the generated images. In 
 As you and see, the eye white is not very good. And also, when the value reach the boundary(vertical is [-30,30], horizontal is [-60, 60]) the results become unreasonable.
 
 <p align="center"> 
-	<img src="doc\obama.png" width="490", height="493">
-	<img src="doc\horizontal.gif" width="490", height="493">
-	<img src="doc\vertical.gif" width="490", height="493">
+	<img src="doc\obama.png" width="245", height="246">
+	<img src="doc\horizontal.gif" width="245", height="246">
+	<img src="doc\vertical.gif" width="245", height="246">
 </p>
